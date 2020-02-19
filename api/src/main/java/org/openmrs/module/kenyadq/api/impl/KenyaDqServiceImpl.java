@@ -17,13 +17,16 @@ import org.apache.commons.logging.LogFactory;
 import org.openmrs.Concept;
 import org.openmrs.ConceptDatatype;
 import org.openmrs.ConceptDescription;
+import org.openmrs.Order;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.LocationService;
+import org.openmrs.api.OrderService;
 import org.openmrs.api.PatientService;
+import org.openmrs.api.context.Context;
 import org.openmrs.api.impl.BaseOpenmrsService;
 import org.openmrs.module.kenyacore.CoreConstants;
 import org.openmrs.module.kenyadq.api.KenyaDqService;
@@ -52,6 +55,9 @@ public class KenyaDqServiceImpl extends BaseOpenmrsService implements KenyaDqSer
     private PatientService patientService;
 
     @Autowired
+    private OrderService orderService;
+
+    @Autowired
     private ConceptService conceptService;
 
     @Autowired
@@ -70,7 +76,12 @@ public class KenyaDqServiceImpl extends BaseOpenmrsService implements KenyaDqSer
     public void mergePatients(Patient preferred, Patient notPreferred) throws APIException {
         try {
             Set<PatientIdentifier> preferredPatientIdentifiers = new HashSet<PatientIdentifier>(preferred.getActiveIdentifiers());
-
+            List<Order> orders = orderService.getAllOrdersByPatient(notPreferred);
+            for (Order order : orders) {
+                if (!order.isVoided()) {
+                    orderService.voidOrder(order, "Requirement for patient merge");
+                }
+            }
             patientService.mergePatients(preferred, notPreferred);
 
             for (Map.Entry<PatientIdentifierType, List<PatientIdentifier>> entry : getAllPatientIdentifiers(preferred).entrySet()) {

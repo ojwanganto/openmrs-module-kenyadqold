@@ -45,7 +45,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -539,120 +538,7 @@ public class DataWarehouseServiceImpl implements DataWarehouseService {
     }
 
     public byte[] downloadPatientWABWHOCD4Extract() {
-        //get all cd4 obs for patient ordered by date
-        //get all who obs for patient ordered by date
-        //get enrollment date
-        //get art init date
-
-        //check if 1st cd4/who is within 3 months of enrollment
-
-        //pick last cd4/who
-        List<Object> data = new ArrayList<Object>();
-        List<Patient> patients = getPatients();
-        int i = 0;
-        for (Patient patient : patients) {
-            if (SAMPLE) {
-                if (i > SAMPLE_SIZE) {
-                    break;
-                }
-                if (patient.getId() % 13 != 0) {
-                    continue;
-                }
-                i++;
-            }
-            List<Object> row = new ArrayList<Object>();
-            try {
-                PersonInfo personInfo = getPersonInfo(patient);
-                EncounterInfo firstEncounterInfo = getFirstEncounter(patient);
-                EncounterInfo hivEnrollmentEncounterInfo = getHivEnrollmentEncounterInfo(patient);
-
-                List<ObsInfo> cd4ObsInfos = getObsInfos(patient, Metadata.Concept.CD4_COUNT);
-                ObsInfo enrollmentCd4 = new ObsInfo();
-                ObsInfo lastCd4 = new ObsInfo();
-                ObsInfo initCd4 = new ObsInfo();
-                ObsInfo m6Cd4 = new ObsInfo();
-                ObsInfo m12Cd4 = new ObsInfo();
-                if (!cd4ObsInfos.isEmpty()) {
-                    if (datesWithinDays(cd4ObsInfos.get(0).obs.getObsDatetime(),
-                            hivEnrollmentEncounterInfo.encounter.getEncounterDatetime(), 90)) {
-                        enrollmentCd4 = cd4ObsInfos.get(0);
-                    }
-                    lastCd4 = cd4ObsInfos.get(cd4ObsInfos.size() - 1);
-
-                    Date artInitDate = getARTInitDate(patient);
-                    if (artInitDate != null) {
-                        for (ObsInfo cd4ObsInfo : cd4ObsInfos) {
-                            if (datesWithinDays(cd4ObsInfo.obs.getObsDatetime(), artInitDate, 90)) {
-                                initCd4 = cd4ObsInfo;
-                                break;
-                            }
-                        }
-
-                        for (ObsInfo cd4ObsInfo : cd4ObsInfos) {
-                            if (datesWithinDays(cd4ObsInfo.obs.getObsDatetime(), artInitDate, 150, 210)) {
-                                m6Cd4 = cd4ObsInfo;
-                                break;
-                            }
-                        }
-
-                        for (ObsInfo cd4ObsInfo : cd4ObsInfos) {
-                            if (datesWithinDays(cd4ObsInfo.obs.getObsDatetime(), artInitDate, 330, 390)) {
-                                m12Cd4 = cd4ObsInfo;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                List<ObsInfo> whoObsInfos = getObsInfos(patient, Metadata.Concept.CURRENT_WHO_STAGE);
-                ObsInfo enrollmentWho = new ObsInfo();
-                ObsInfo lastWho = new ObsInfo();
-                ObsInfo initWho = new ObsInfo();
-                if (!whoObsInfos.isEmpty()) {
-                    if (datesWithinDays(whoObsInfos.get(0).obs.getObsDatetime(),
-                            hivEnrollmentEncounterInfo.encounter.getEncounterDatetime(), 90)) {
-                        enrollmentWho = whoObsInfos.get(0);
-                    }
-                    lastWho = whoObsInfos.get(whoObsInfos.size() - 1);
-
-                    Date artInitDate = getARTInitDate(patient);
-                    if (artInitDate != null) {
-                        for (ObsInfo whoObsInfo : whoObsInfos) {
-                            if (datesWithinDays(whoObsInfo.obs.getObsDatetime(), artInitDate, 90)) {
-                                initWho = whoObsInfo;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-
-                row.add(personInfo.upn);
-                row.add(personInfo.pk);
-                row.add(firstEncounterInfo.locationInfo.location.getId());
-                row.add(firstEncounterInfo.locationInfo.mfl);
-                row.add(enrollmentCd4.value);
-                row.add(enrollmentCd4.date);
-                row.add(enrollmentWho.value);
-                row.add(enrollmentWho.date);
-                row.add(initCd4.value);
-                row.add(initCd4.date);
-                row.add(initWho.value);
-                row.add(initWho.date);
-                row.add(lastWho.value);
-                row.add(lastWho.date);
-                row.add(lastCd4.value);
-                row.add(lastCd4.date);
-                row.add(m12Cd4.value);
-                row.add(m12Cd4.date);
-                row.add(m6Cd4.value);
-                row.add(m6Cd4.date);
-                data.add(row.toArray());
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
-        return csvCreator.createCsv(data, getPatientWABWHOCD4ExtractHeaderRow());
+        return null;
     }
 
     private boolean datesWithinDays(Date one, Date two, int days) {
@@ -670,120 +556,7 @@ public class DataWarehouseServiceImpl implements DataWarehouseService {
     }
 
     public byte[] downloadARTPatientExtract() {
-        List<Object> data = new ArrayList<Object>();
-        List<Patient> patients = getPatients();
-        int i = 0;
-        for (Patient patient : patients) {
-            if (SAMPLE) {
-                if (i > SAMPLE_SIZE) {
-                    break;
-                }
-                if (patient.getId() % 13 != 0 || patient.getId() == 28) {
-                    continue;
-                }
-                i++;
-            }
-            List<Object> row = new ArrayList<Object>();
-            try {
-                PersonInfo personInfo = getPersonInfo(patient);
-                EncounterInfo firstEncounterInfo = getFirstEncounter(patient);
-                EncounterInfo hivEnrollmentEncounterInfo = getHivEnrollmentEncounterInfo(patient);
-                EncounterInfo hivDiscontinuationEncounterInfo = getHivDiscontinuationEncounterInfo(patient);
-
-                VisitInfo lastVisitInfo = getLastVisitInfo(patient);
-
-                ObsInfo exitReasonObsInfo = getObsInfo(patient, Metadata.Concept.REASON_FOR_PROGRAM_DISCONTINUATION, true);
-                ObsInfo patientSourceObsInfo = getObsInfo(patient, Metadata.Concept.METHOD_OF_ENROLLMENT, true);
-
-                List<ObsInfo> artDrugHist = getObsInfos(patient, "966AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-                ObsInfo prevArt = new ObsInfo();
-                if (artDrugHist != null && !artDrugHist.isEmpty()) {
-                    prevArt = artDrugHist.get(0);
-                }
-
-                Date dob = personInfo.patient.getBirthdate();
-
-                Integer ageAtEnrollment = diffInYears(dob, hivEnrollmentEncounterInfo.encounter.getEncounterDatetime());
-                Integer ageAtLastVisit = null;
-                if (lastVisitInfo != null && lastVisitInfo.visit != null) {
-                    Date lastVisitDate = lastVisitInfo.visit.getStartDatetime();
-                    ageAtLastVisit = diffInYears(lastVisitDate, dob);
-                }
-
-                Date artStartDate = null;
-                if (prevArt.obs != null) {
-                    artStartDate = prevArt.obs.getObsDatetime();
-                } else {
-                    artStartDate = getARTInitDate(patient);
-                }
-
-                String artStartDateString = null;
-                Integer ageAtArtStart = null;
-                if (artStartDate != null) {
-                    artStartDateString = DATE_FORMAT.format(artStartDate);
-                    ageAtArtStart = diffInYears(artStartDate, dob);
-                }
-
-
-                String startRegimen = null;
-                String startRegimenLine = null;
-
-
-                String lastArtDate = null;
-                String lastRegimen = null;
-                String lastRegimenLine = null;
-                String lastRegimenDuration = null;
-
-                String expectedReturn = null;
-
-                Map<String, List<Order>> drugOrders = getDrugOrders(patient);
-                if (drugOrders != null && !drugOrders.isEmpty()) {
-                    List<String> keys = new ArrayList<String>(drugOrders.keySet());
-                    List<Order> startDrugOrders = drugOrders.get(keys.get(0));
-                    List<Order> lastDrugOrders = drugOrders.get(keys.get(keys.size() - 1));
-
-                    startRegimen = getRegimen(startDrugOrders);
-                    startRegimenLine = getRegimenLine(startRegimen);
-
-                    lastRegimen = getRegimen(lastDrugOrders);
-                    lastRegimenLine = getRegimenLine(lastRegimen);
-
-                    lastArtDate = keys.get(keys.size() - 1);
-
-                    System.out.println("");
-                }
-
-                row.add(personInfo.pk);
-                row.add(personInfo.upn);
-                row.add(ageAtEnrollment);
-                row.add(ageAtArtStart);
-                row.add(ageAtLastVisit);
-                row.add(firstEncounterInfo.locationInfo.mfl);
-                row.add(firstEncounterInfo.locationInfo.facilityName);
-                row.add(hivEnrollmentEncounterInfo.encounterDate);
-                row.add(patientSourceObsInfo.value);
-                row.add(personInfo.gender);
-                row.add(artStartDateString);
-                row.add(prevArt.date);
-                row.add(prevArt.value);
-                row.add(artStartDateString);
-                row.add(startRegimen);
-                row.add(startRegimenLine);
-                row.add(lastArtDate);
-                row.add(lastRegimen);
-                row.add(lastRegimenLine);
-                row.add("");//Duration not in KenyaEMR
-                row.add("");//ExpectedReturn cannot be calculated in the absence of Duration Above
-                row.add(lastVisitInfo.visitDate);
-                row.add(exitReasonObsInfo.value);
-                row.add(hivDiscontinuationEncounterInfo.encounterDate);
-
-                data.add(row.toArray());
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
-        return csvCreator.createCsv(data, getARTPatientExtractHeaderRow());
+    return null;
     }
 
     @Override
@@ -1362,7 +1135,7 @@ public class DataWarehouseServiceImpl implements DataWarehouseService {
         return obsInfo;
     }
 
-    private Date getARTInitDate(Patient patient) {
+    /*private Date getARTInitDate(Patient patient) {
         List<Order> orders = orderService.getOrdersByPatient(patient);
         if (orders != null && !orders.isEmpty()) {
             Collections.sort(orders, new Comparator<Order>() {
@@ -1375,8 +1148,8 @@ public class DataWarehouseServiceImpl implements DataWarehouseService {
         }
         return null;
     }
-
-    private Map<String, List<Order>> getDrugOrders(Patient patient) {
+*/
+    /*private Map<String, List<Order>> getDrugOrders(Patient patient) {
         Map<String, List<Order>> collectiveOrders = new LinkedHashMap<String, List<Order>>();
 
         List<Order> orders = orderService.getOrdersByPatient(patient);
@@ -1397,7 +1170,7 @@ public class DataWarehouseServiceImpl implements DataWarehouseService {
             }
         }
         return collectiveOrders;
-    }
+    }*/
 
 
     private class PersonInfo {
